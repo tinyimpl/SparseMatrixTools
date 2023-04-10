@@ -4,6 +4,7 @@ import os
 import scipy.io as sio
 import scipy.sparse as sparse
 import numpy as np
+import warnings
 from matplotlib.pyplot import figure, show, title
 
 
@@ -63,8 +64,9 @@ class PlotProgram:
                 )
             )
         if self.__mtx_format == "mat":
-            print(
-                "warning: only the matlab-format sparse matrix downloaded form sparse.tamu.edu is supported!!!"
+            warnings.warn(
+                "only the matlab-format sparse matrix downloaded form sparse.tamu.edu is supported!!!",
+                RuntimeWarning,
             )
 
     def __read_mtx(self):
