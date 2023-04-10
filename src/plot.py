@@ -18,14 +18,20 @@ class MatrixMarketReader(SparseMatrixReader):
         return sio.mmread(mtx_path)
 
 
+class MatlabReader(SparseMatrixReader):
+    def read(self, mtx_path):
+        mtx = sio.loadmat(mtx_path)
+        mtx = mtx["Problem"]["A"][0][0]
+        mtx = sparse.csc_matrix(mtx).tocoo()
+        return mtx
+
+
 class PlotProgram:
     __mtx_format = ""
     __mtx_file = ""
 
     def __init__(self) -> None:
-        self.__reader_factory = {
-            "mm": MatrixMarketReader(),
-        }
+        self.__reader_factory = {"mm": MatrixMarketReader(), "mat": MatlabReader()}
         pass
 
     def run(self, parser):
@@ -55,6 +61,10 @@ class PlotProgram:
                 "sparse matrix file is not exists, matrix file: {}".format(
                     self.__mtx_file
                 )
+            )
+        if self.__mtx_format == "mat":
+            print(
+                "warning: only the matlab-format sparse matrix downloaded form sparse.tamu.edu is supported!!!"
             )
 
     def __read_mtx(self):
