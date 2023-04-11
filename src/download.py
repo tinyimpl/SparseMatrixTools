@@ -2,7 +2,8 @@
 import argparse
 import ssgetpy as ssget
 import warnings
-from prompt_toolkit import prompt
+from os import path
+from prompt_toolkit import PromptSession, shortcuts
 from beautifultable import BeautifulTable
 from abc import abstractmethod
 
@@ -23,7 +24,7 @@ def print_mtxs(mtxs):
 
 class ArgumentParser(argparse.ArgumentParser):
     def exit(self, status=0, message=None):
-        raise Exception()
+        raise Exception
 
 
 class Command:
@@ -61,17 +62,25 @@ class SearchCommand(Command):
     def __init__(self, subparsers, states) -> None:
         super().__init__(subparsers, states)
         self.subparser = subparsers.add_parser("search", help="search sparse matrix")
-        self.subparser.add_argument("--rowbounds", type=tuple, default=(None, None))
-        self.subparser.add_argument("--colbounds", type=tuple, default=(None, None))
-        self.subparser.add_argument("--nzbounds", type=tuple, default=(None, None))
+        self.subparser.add_argument(
+            "-r", "--rowbounds", nargs=2, type=int, default=None
+        )
+        self.subparser.add_argument(
+            "-c", "--colbounds", nargs=2, type=int, default=None
+        )
+        self.subparser.add_argument("-n", "--nzbounds", nargs=2, type=int, default=None)
         self.subparser.add_argument("--isspd", type=bool, default=None)
         self.subparser.add_argument("--is2d3d", type=bool, default=None)
         self.subparser.add_argument(
-            "--dtype", type=str, default=None, choices=["real", "complex", "binary"]
+            "-d",
+            "--dtype",
+            type=str,
+            default=None,
+            choices=["real", "complex", "binary"],
         )
-        self.subparser.add_argument("--group", type=str, default=None)
-        self.subparser.add_argument("--kind", type=str, default=None)
-        self.subparser.add_argument("--limit", type=int, default=10)
+        self.subparser.add_argument("-g", "--group", type=str, default=None)
+        self.subparser.add_argument("-k", "--kind", type=str, default=None)
+        self.subparser.add_argument("-l", "--limit", type=int, default=10)
 
     def run(self, args):
         mtxs = ssget.search(
@@ -87,7 +96,7 @@ class SearchCommand(Command):
         )
         print_mtxs(mtxs)
         for mtx in mtxs:
-            self.states.mtx_cache.add(mtx)
+            self.states.mtx_cache.add_item(mtx)
 
 
 class DownloadCommand(Command):
@@ -95,6 +104,7 @@ class DownloadCommand(Command):
         super().__init__(subparsers, states)
         self.subparser = subparsers.add_parser("download", help="downalod matrix")
         self.subparser.add_argument(
+            "-f",
             "--format",
             type=str,
             required=False,
@@ -102,21 +112,27 @@ class DownloadCommand(Command):
             default="mm",
         )
         self.subparser.add_argument(
-            "--extract", required=False, type=bool, default=False
+            "-e", "--extract", required=False, type=bool, default=False
+        )
+        self.subparser.add_argument(
+            "-d", "--dest", required=False, type=str, default=path.curdir
         )
 
     def check(self, args):
-        pass
+        if path is not None and not path.exists(args.dest):
+            raise Exception("dest path is not exist!!!")
 
     def run(self, args):
-        if self.states.mtx_cart is None or len(self.states.mtx_cart) == 0:
+        if len(self.states.mtx_cart) == 0:
             warnings.warn(
                 "matrix cart is empty!!!",
                 RuntimeWarning,
             )
             return
-        for mtx in self.states.mtx_cart:
-            mtx.download(format=args.format.upper(), extract=args.extract)
+        for mtx in self.states.mtx_cart.values():
+            mtx.download(
+                format=args.format.upper(), extract=args.extract, destpath=args.dest
+            )
         self.states.mtx_cart.clear()
 
 
@@ -129,13 +145,13 @@ class CacheCommand(Command):
         pass
 
     def run(self, args):
-        if self.states.mtx_cache is None or len(self.states.mtx_cache) == 0:
+        if len(self.states.mtx_cache) == 0:
             warnings.warn(
                 "matrix cache is empty!!!",
                 RuntimeWarning,
             )
             return
-        print_mtxs(self.states.mtx_cache)
+        print_mtxs(self.states.mtx_cache.values())
 
 
 class ListCommand(Command):
@@ -147,32 +163,36 @@ class ListCommand(Command):
         pass
 
     def run(self, args):
-        if self.states.mtx_cart is None or len(self.states.mtx_cart) == 0:
+        if len(self.states.mtx_cart) == 0:
             warnings.warn(
                 "matrix cart is empty!!!",
                 RuntimeWarning,
             )
             return
-        print_mtxs(self.states.mtx_cart)
+        print_mtxs(self.states.mtx_cart.values())
 
 
-class AppendCommand(Command):
+class AddCommand(Command):
     def __init__(self, subparsers, states) -> None:
         super().__init__(subparsers, states)
-        self.subparser = subparsers.add_parser("append", help="append matrix to cart")
+        self.subparser = subparsers.add_parser("add", help="add matrix to cart")
         group = self.subparser.add_mutually_exclusive_group()
-        group.add_argument("--id", type=int)
-        group.add_argument("--name", type=str)
+        group.add_argument("-i", "--id", type=int)
+        group.add_argument("-n", "--name", type=str)
 
     def check(self, args):
         pass
 
     def run(self, args):
-        for mtx in self.states.mtx_cache:
-            if args.id is None and args.name == mtx.name:
-                self.states.mtx_cart.add(mtx)
-            if args.name is None and args.id == mtx.id:
-                self.states.mtx_cart.add(mtx)
+        try:
+            if args.id is not None:
+                mtx = self.states.mtx_cache.get_item_by_id(args.id)
+            if args.name is not None:
+                mtx = self.states.mtx_cache.get_item_by_name(args.name)
+        except:
+            warnings.warn("input is not in cache!!!")
+            return
+        self.states.mtx_cart.add_item(mtx)
 
 
 class RemoveCommand(Command):
@@ -180,20 +200,29 @@ class RemoveCommand(Command):
         super().__init__(subparsers, states)
         self.subparser = subparsers.add_parser("remove", help="remove matrix in cart")
         group = self.subparser.add_mutually_exclusive_group()
-        group.add_argument("--id", type=int)
-        group.add_argument("--name", type=str)
+        group.add_argument("-i", "--id", type=int)
+        group.add_argument("-n", "--name", type=str)
 
     def check(self, args):
         pass
 
     def run(self, args):
-        for mtx in self.states.mtx_cart:
-            if args.id is None and args.name == mtx.name:
-                self.states.mtx_cart.remove(mtx)
-                return
-            if args.name is None and args.id == mtx.id:
-                self.states.mtx_cart.remove(mtx)
-                return
+        if args.id is not None:
+            self.states.mtx_cart.remove_item_by_id(args.id)
+        if args.name is not None:
+            self.states.mtx_cart.remove_item_by_name(args.name)
+
+
+class ClearCommand(Command):
+    def __init__(self, subparsers, states) -> None:
+        super().__init__(subparsers, states)
+        self.subparser = subparsers.add_parser("clear", help="clear screen")
+
+    def check(self, args):
+        pass
+
+    def run(self, args):
+        shortcuts.clear()
 
 
 class ExitCommand(Command):
@@ -208,9 +237,55 @@ class ExitCommand(Command):
         exit()
 
 
+class MtxMap:
+    def __init__(self) -> None:
+        self.__id_to_mtx_map = dict()
+        self.__name_to_mtx_map = dict()
+
+    def add_item(self, mtx):
+        if mtx is not None:
+            self.__id_to_mtx_map[mtx.id] = mtx
+            self.__name_to_mtx_map[mtx.name] = mtx
+
+    def remove_item_by_id(self, id):
+        if id is not None:
+            try:
+                name = self.__id_to_mtx_map[id].name
+                del self.__id_to_mtx_map[id]
+                del self.__name_to_mtx_map[name]
+            except:
+                pass
+
+    def remove_item_by_name(self, name):
+        if name is not None:
+            try:
+                id = self.__name_to_mtx_map[name].id
+                del self.__name_to_mtx_map[name]
+                del self.__id_to_mtx_map[id]
+            except:
+                pass
+
+    def get_item_by_id(self, id):
+        return self.__id_to_mtx_map[id]
+
+    def get_item_by_name(self, name):
+        return self.__name_to_mtx_map[name]
+
+    def values(self):
+        return self.__id_to_mtx_map.values()
+
+    def clear(self):
+        self.__id_to_mtx_map.clear()
+        self.__name_to_mtx_map.clear()
+
+    def __len__(self):
+        assert len(self.__id_to_mtx_map) == len(self.__name_to_mtx_map)
+        return len(self.__id_to_mtx_map)
+
+
 class State:
-    mtx_cache = set()
-    mtx_cart = set()
+    mtx_cache = MtxMap()
+    mtx_cart = MtxMap()
 
 
 class DownloadProgram:
@@ -223,12 +298,14 @@ class DownloadProgram:
             "download": DownloadCommand(subparsers, state),
             "list": ListCommand(subparsers, state),
             "cache": CacheCommand(subparsers, state),
-            "append": AppendCommand(subparsers, state),
+            "add": AddCommand(subparsers, state),
             "remove": RemoveCommand(subparsers, state),
+            "clear": ClearCommand(subparsers, state),
             "exit": ExitCommand(subparsers, state),
         }
+        session = PromptSession()
         while 1:
-            input = prompt(">").lower()
+            input = session.prompt(">> ").lower()
             if len(input) > 0:
                 try:
                     input = input.split()
