@@ -28,7 +28,6 @@ class ArgumentParser(argparse.ArgumentParser):
 
 
 class Command:
-    @abstractmethod
     def __init__(self, subparsers, states) -> None:
         self.subparser = None
         self.states = states

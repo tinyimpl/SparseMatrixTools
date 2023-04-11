@@ -11,24 +11,24 @@ from beautifultable import BeautifulTable
 class MetaInfo:
     def __init__(self, name, format, mtx) -> None:
         isinstance(mtx, sparse.coo_matrix)
-        self.name_ = name
-        self.format_ = format
-        self.rows_ = mtx.shape[0]
-        self.cols_ = mtx.shape[1]
-        self.nnz_ = mtx.nnz
-        self.nnz_per_row_ = mtx.nnz / mtx.shape[0]
+        self.name = name
+        self.format = format
+        self.rows = mtx.shape[0]
+        self.cols = mtx.shape[1]
+        self.nnz = mtx.nnz
+        self.nnz_per_row = mtx.nnz / mtx.shape[0]
 
     def __header(self):
         return ["name", "format", "rows", "cols", "nnz", "nnz/row"]
 
     def __body(self):
         return [
-            self.name_,
-            self.format_,
-            self.rows_,
-            self.cols_,
-            self.nnz_,
-            self.nnz_per_row_,
+            self.name,
+            self.format,
+            self.rows,
+            self.cols,
+            self.nnz,
+            self.nnz_per_row,
         ]
 
     def __str__(self) -> str:
