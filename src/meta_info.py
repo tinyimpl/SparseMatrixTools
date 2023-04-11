@@ -9,13 +9,6 @@ from beautifultable import BeautifulTable
 
 
 class MetaInfo:
-    name_ = ""
-    format_ = ""
-    rows_ = 0
-    cols_ = 0
-    nnz_ = 0
-    nnz_per_row_ = 0.0
-
     def __init__(self, name, format, mtx) -> None:
         isinstance(mtx, sparse.coo_matrix)
         self.name_ = name
@@ -64,11 +57,10 @@ class MatlabMetaInfo:
 
 
 class MetaInfoProgram:
-    __mtx_format = ""
-    __mtx_file = ""
-
     def __init__(self) -> None:
         self.__info_factory = {"mm": MatrixMarketMetaInfo(), "mat": MatlabMetaInfo()}
+        self.__mtx_format = ""
+        self.__mtx_file = ""
         pass
 
     def run(self, parser):

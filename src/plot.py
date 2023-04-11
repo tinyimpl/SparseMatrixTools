@@ -28,11 +28,10 @@ class MatlabReader(SparseMatrixReader):
 
 
 class PlotProgram:
-    __mtx_format = ""
-    __mtx_file = ""
-
     def __init__(self) -> None:
         self.__reader_factory = {"mm": MatrixMarketReader(), "mat": MatlabReader()}
+        self.__mtx_format = ""
+        self.__mtx_file = ""
         pass
 
     def run(self, parser):
