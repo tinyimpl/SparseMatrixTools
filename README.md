@@ -3,8 +3,8 @@
 - [x] plot.py: draw images of sparse matrix 
 - [x] meta_info.py: show meta info of sparse matrix
 - [x] download.py: download sparse matrix from [sparse market](https://sparse.tamu.edu/)
+- [x] read.py: read the sparse matrix for the specified row or index
 - [ ] transform.py: format conversion of sparse matrix
-- [ ] reader.py: read the sparse matrix for the specified row or index
 
 ## Run
 ```bash
@@ -23,5 +23,10 @@ poetry run python3 ./src/download.py
 > 3. list
 > 4. remove
 > 5. download
+# run read
+poetry run python3 ./src/read.py --format ${Matrix Format} --file ${Matrix File} --to ${Read Format}
+> 1. row -> r -i idx
+> 2. col -> c -i idx
+> 3. val -> v -i idx
 ```
 
